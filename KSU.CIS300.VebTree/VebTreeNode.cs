@@ -64,22 +64,35 @@ namespace KSU.CIS300.VebTree
         /// <param name="universeSize"></param>
         public VebTreeNode(int universeSize)
         {
-            if (universeSize == 0 || ((universeSize) ^ (universeSize - 1)) != 0)
+            if (universeSize == 0)
             {
                 throw new ArgumentException();
             }
+            else if ((universeSize & (universeSize - 1)) != 0)
+            {
+                throw new ArgumentException();
+            }
+            Universe = universeSize;
+            _power = (int)Math.Log(Universe, 2);
+
+            Min = -1;
+            Max = -1;
+
+            if (!(universeSize <= 2))
+            {
+                Clusters = new VebTreeNode[UpperSquareRoot()];
+                Summary = new VebTreeNode(UpperSquareRoot());
+                int lower = (int)LowerSquareRoot();
+
+                for (int i = 0; i < Clusters.Length; i++)
+                {
+                    Clusters[i] = new VebTreeNode(lower);
+                }
+            }
             else
             {
-                Universe = universeSize;
-                _power = (int)Math.Pow(universeSize, 1 / 2);
-                Min = -1;
-                Max = -1;
-                if (Universe > 2)
-                {
-                    int UpperSquare = UpperSquareRoot();
-                    Summary.Universe = UpperSquare;
-                    Clusters = new VebTreeNode[UpperSquare];
-                }
+                Clusters = null;
+                Summary = null;
             }
         }
         /// <summary>
@@ -104,25 +117,30 @@ namespace KSU.CIS300.VebTree
 
         public int High(int key)
         {
-            int ReturnValue = key / (int)LowerSquareRoot();
-            return ReturnValue;
+            int _high = (int)Math.Floor(key / LowerSquareRoot());
+            return _high;
         }
 
         public int Low(int key)
         {
-            int ReturnValue = key % (int)LowerSquareRoot();
-            return ReturnValue;
+            int _low = key % (int)LowerSquareRoot();
+            return _low;
         }
 
         public int Index(int subtree, int offset)
         {
-            int ReturnValue = subtree * (int)LowerSquareRoot() + offset;
-            return ReturnValue;
+            int _index = subtree * (int)LowerSquareRoot() + offset;
+            return _index;
         }
 
         public void Insert(int key)
         {
-            if (Min == -1)
+            if (key < 0 || key >= Universe)
+            {
+                throw new ArgumentException();
+            }
+
+            if (Min < 0)
             {
                 Min = key;
                 Max = key;
@@ -131,13 +149,20 @@ namespace KSU.CIS300.VebTree
             {
                 if (key < Min)
                 {
+                    int _oldkey = Min;
                     Min = key;
+                    key = _oldkey;
                 }
                 if (Universe > 2)
                 {
-                    // Add more recursion
-                    int Highvalue = High(key);
-                    int Lowvalue = Low(key);
+                    int highKey = High(key);
+                    int lowKey = Low(key);
+
+                    if (Clusters[highKey].Min == -1)
+                    {
+                        Summary.Insert(highKey);
+                    }
+                    Clusters[highKey].Insert(lowKey);
                 }
                 if (key > Max)
                 {
@@ -152,11 +177,18 @@ namespace KSU.CIS300.VebTree
             {
                 return false;
             }
-            else
+
+            if (Min == key || Max == key)
             {
-                // Double Check
-                Find(High(key));
+                return true;
             }
+            if (Universe == 2)
+            {
+                return false;
+            }
+            int highKey = High(key);
+            int lowKey = Low(key);
+            return Clusters[highKey].Find(lowKey);
         }
 
         public int Successor(int key)
@@ -172,24 +204,89 @@ namespace KSU.CIS300.VebTree
                     return -1;
                 }
             }
-            else if (key > 1 && key < Min)
+            if (Universe != 2)
             {
-
-                return Min;
-
+                if (key > -1 && key < Min)
+                {
+                    return Min;
+                }
             }
+
+            int highKey = High(key);
+            int lowKey = Low(key);
+            if (Clusters[highKey].Max != -1 && lowKey < Clusters[highKey].Max) //Clusters[highKey].Max > lowKey)
+            {
+                int _offset = Clusters[highKey].Successor(lowKey);
+                return Index(highKey, _offset);
+            }
+
             else
             {
-                int Index = High(key);
-                Clusters[Index].Find(Max);
+                int successorClusterIndex = Summary.Successor(highKey);
+                if (successorClusterIndex == -1)
+                {
+                    return -1;
+                }
+                else
+                {
+                    return Index(successorClusterIndex, Clusters[successorClusterIndex].Min);
+                }
             }
-
-               
         }
 
         public void Remove(int keyToRemove)
         {
+            if (Min == Max && keyToRemove == Min)
+            {
+                Min = -1;
+                Max = -1;
+            }
+            else if (Universe == 2)
+            {
+                if (keyToRemove == 0)
+                {
+                    Min = 1;
+                    Max = 1;
+                }
+                else
+                {
+                    Min = 0;
+                    Max = 0;
+                }
+            }
+            else
+            {
+                if (Min == keyToRemove)
+                {
+                    Min = Index(Summary.Min, Clusters[Summary.Min].Min);
+                    keyToRemove = Min;
+                }
+                int highKey = High(keyToRemove);
+                int lowKey = Low(keyToRemove);
 
+                Clusters[highKey].Remove(lowKey);
+
+                if (Clusters[highKey].Max == -1)
+                {
+                    Summary.Remove(highKey);
+
+                    if (Summary.Max == -1)
+                    {
+                        Max = Min;
+                    }
+                    else
+                    {
+                        Max = Index(Summary.Max, Clusters[Summary.Max].Max);
+                    }
+                }
+                else
+                {
+                    if (keyToRemove == Max)
+                    {
+                        Max = Index(highKey, Clusters[highKey].Max);
+                    }
+                }
+            }
         }
     }
 }

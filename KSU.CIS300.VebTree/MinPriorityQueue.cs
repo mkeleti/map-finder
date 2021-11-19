@@ -21,7 +21,20 @@ namespace KSU.CIS300.VebTree
         /// <summary>
         /// 
         /// </summary>
-        public int MinimumPriority { get; }
+        public int MinimumPriority
+        {
+            get
+            {
+                if (_elements == null)
+                {
+                    throw new InvalidOperationException();
+                }
+                else
+                {
+                    return _elements.Min;
+                }
+            }
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -30,9 +43,9 @@ namespace KSU.CIS300.VebTree
         /// 
         /// </summary>
         /// <param name="maxSize"></param>
-        MinPriorityQueue(int maxSize)
+        public MinPriorityQueue(int maxSize)
         {
-
+            _elements = new VebTreeNode(maxSize);
         }
         /// <summary>
         /// 
@@ -40,7 +53,8 @@ namespace KSU.CIS300.VebTree
         /// <param name="num"></param>
         public void Enqueue(int num)
         {
-
+            _elements.Insert(num);
+            Count++;
         }
         /// <summary>
         /// 
@@ -48,7 +62,14 @@ namespace KSU.CIS300.VebTree
         /// <returns></returns>
         public int Dequeue()
         {
-
+            if (Count == 0)
+            {
+                throw new InvalidOperationException();
+            }
+            int num = MinimumPriority;
+            _elements.Remove(num);
+            Count--;
+            return num;
         }
     }
 }
