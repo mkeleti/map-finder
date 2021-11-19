@@ -72,11 +72,11 @@ namespace KSU.CIS300.VebTree
             {
                 throw new ArgumentException();
             }
-            Universe = universeSize;
-            _power = (int)Math.Log(Universe, 2);
-
             Min = -1;
             Max = -1;
+
+            Universe = universeSize;
+            _power = (int)Math.Log(Universe, 2);
 
             if (!(universeSize <= 2))
             {
@@ -98,41 +98,55 @@ namespace KSU.CIS300.VebTree
         /// <summary>
         /// Calculates the lower square root of the Universe.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The lower square root of the universe</returns>
         public double LowerSquareRoot()
         {
-
             return Math.Pow(2, _power / 2);
         }
         /// <summary>
         /// Calculates the lower square root of the Universe and casts as an integer.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The upper square root of the universe</returns>
         public int UpperSquareRoot()
         {
 
-
             return (int)Math.Pow(2, (_power + 1) / 2);
         }
-
+        /// <summary>
+        /// Finds which subtree the given key belongs to.
+        /// </summary>
+        /// <param name="key">Key to search for</param>
+        /// <returns>Index of the upper subtree</returns>
         public int High(int key)
         {
-            int _high = (int)Math.Floor(key / LowerSquareRoot());
-            return _high;
+            int ReturnValue = (int)Math.Floor(key / LowerSquareRoot());
+            return ReturnValue;
         }
-
+        /// <summary>
+        /// Finds the position of the given key within a lower subtree.
+        /// </summary>
+        /// <param name="key">Key to search for</param>
+        /// <returns>Index of the lower subtree</returns>
         public int Low(int key)
         {
-            int _low = key % (int)LowerSquareRoot();
-            return _low;
+            int ReturnValue = key % (int)LowerSquareRoot();
+            return ReturnValue;
         }
-
+        /// <summary>
+        /// Finds the element from the given subtree and offset tree
+        /// </summary>
+        /// <param name="subtree">Subtree to search within</param>
+        /// <param name="offset">Offset of the value</param>
+        /// <returns>Index of the element searched for</returns>
         public int Index(int subtree, int offset)
         {
-            int _index = subtree * (int)LowerSquareRoot() + offset;
-            return _index;
+            int ReturnValue = subtree * (int)LowerSquareRoot() + offset;
+            return ReturnValue;
         }
-
+        /// <summary>
+        /// Inserts a key into the veb tree at its proper position.
+        /// </summary>
+        /// <param name="key">Key to insert</param>
         public void Insert(int key)
         {
             if (key < 0 || key >= Universe)
@@ -155,14 +169,14 @@ namespace KSU.CIS300.VebTree
                 }
                 if (Universe > 2)
                 {
-                    int highKey = High(key);
-                    int lowKey = Low(key);
+                    int HighKey = High(key);
+                    int LowKey = Low(key);
 
-                    if (Clusters[highKey].Min == -1)
+                    if (Clusters[HighKey].Min == -1)
                     {
-                        Summary.Insert(highKey);
+                        Summary.Insert(HighKey);
                     }
-                    Clusters[highKey].Insert(lowKey);
+                    Clusters[HighKey].Insert(LowKey);
                 }
                 if (key > Max)
                 {
@@ -170,7 +184,11 @@ namespace KSU.CIS300.VebTree
                 }
             }
         }
-
+        /// <summary>
+        /// Searches the veb tree in order to determine whether or not the key exists or not already.
+        /// </summary>
+        /// <param name="key">Key to search for</param>
+        /// <returns>Whether or not the tree exists</returns>
         public bool Find(int key)
         {
             if (key >= Universe)
@@ -186,11 +204,15 @@ namespace KSU.CIS300.VebTree
             {
                 return false;
             }
-            int highKey = High(key);
-            int lowKey = Low(key);
-            return Clusters[highKey].Find(lowKey);
+            int HighKey = High(key);
+            int LowKey = Low(key);
+            return Clusters[HighKey].Find(LowKey);
         }
-
+        /// <summary>
+        /// Determines the next largest key stored in the tree after the current tree.
+        /// </summary>
+        /// <param name="key">Key that we are searching after</param>
+        /// <returns>The index of the next largest key</returns>
         public int Successor(int key)
         {
             if (Universe == 2)
@@ -204,25 +226,22 @@ namespace KSU.CIS300.VebTree
                     return -1;
                 }
             }
-            if (Universe != 2)
+            else if (key > -1 && key < Min)
             {
-                if (key > -1 && key < Min)
-                {
-                    return Min;
-                }
+                return Min;
             }
 
-            int highKey = High(key);
-            int lowKey = Low(key);
-            if (Clusters[highKey].Max != -1 && lowKey < Clusters[highKey].Max) //Clusters[highKey].Max > lowKey)
+            int HighKey = High(key);
+            int LowKey = Low(key);
+            if (Clusters[HighKey].Max != -1 && LowKey < Clusters[HighKey].Max)
             {
-                int _offset = Clusters[highKey].Successor(lowKey);
-                return Index(highKey, _offset);
+                int _offset = Clusters[HighKey].Successor(LowKey);
+                return Index(HighKey, _offset);
             }
 
             else
             {
-                int successorClusterIndex = Summary.Successor(highKey);
+                int successorClusterIndex = Summary.Successor(HighKey);
                 if (successorClusterIndex == -1)
                 {
                     return -1;
@@ -233,7 +252,10 @@ namespace KSU.CIS300.VebTree
                 }
             }
         }
-
+        /// <summary>
+        /// Removes a key from the VEB tree by first finding the index of the key then removing.
+        /// </summary>
+        /// <param name="keyToRemove">Key to remove from the tree.</param>
         public void Remove(int keyToRemove)
         {
             if (Min == Max && keyToRemove == Min)
@@ -261,14 +283,14 @@ namespace KSU.CIS300.VebTree
                     Min = Index(Summary.Min, Clusters[Summary.Min].Min);
                     keyToRemove = Min;
                 }
-                int highKey = High(keyToRemove);
-                int lowKey = Low(keyToRemove);
+                int HighKey = High(keyToRemove);
+                int LowKey = Low(keyToRemove);
 
-                Clusters[highKey].Remove(lowKey);
+                Clusters[HighKey].Remove(LowKey);
 
-                if (Clusters[highKey].Max == -1)
+                if (Clusters[HighKey].Max == -1)
                 {
-                    Summary.Remove(highKey);
+                    Summary.Remove(HighKey);
 
                     if (Summary.Max == -1)
                     {
@@ -283,7 +305,7 @@ namespace KSU.CIS300.VebTree
                 {
                     if (keyToRemove == Max)
                     {
-                        Max = Index(highKey, Clusters[highKey].Max);
+                        Max = Index(HighKey, Clusters[HighKey].Max);
                     }
                 }
             }
